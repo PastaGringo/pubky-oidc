@@ -1,0 +1,14 @@
+services:
+  tuwunel:
+    image: ghcr.io/matrix-construct/tuwunel:v1.9.4
+    environment:
+      TUWUNEL_CONFIG: /etc/tuwunel/tuwunel.toml
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./tuwunel.toml:/etc/tuwunel/tuwunel.toml:ro
+      - ./secrets/pubky_client_secret:/run/secrets/pubky_client_secret:ro
+      - tuwunel-db:/var/lib/tuwunel
+
+volumes:
+  tuwunel-db:
