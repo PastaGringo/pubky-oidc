@@ -16,7 +16,7 @@ import { generateKeyPairSync, randomBytes } from 'node:crypto'
 import { dirname } from 'node:path'
 import Provider from 'oidc-provider'
 import QRCode from 'qrcode'
-import { Pubky, AuthFlowKind } from '@synonymdev/pubky'
+import { Pubky, AuthFlowKind, PublicKey } from '@synonymdev/pubky'
 
 const env = (name, fallback) => {
   const v = process.env[name] ?? fallback
@@ -32,6 +32,12 @@ const REDIRECT_URIS = env('REDIRECT_URIS').split(',').map((s) => s.trim())
 const KEYS_FILE = env('KEYS_FILE', './data/keys.json')
 const NEXUS_URL = env('NEXUS_URL', 'https://nexus.pubky.app')
 const PUBKY_RELAY = process.env.PUBKY_RELAY || null
+// Optional: only Pubky users whose homeserver is one of these public keys may
+// sign in (comma-separated z-base-32 keys). Empty: any Pubky user.
+const ALLOWED_HOMESERVERS = (process.env.ALLOWED_HOMESERVERS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 // How long a QR code stays valid before its flow is dropped.
 const FLOW_TTL_MS = 10 * 60 * 1000
 
@@ -107,7 +113,18 @@ function startFlow(uid) {
   flow
     .awaitToken()
     // `publicKey` is a property (pubky.d.ts), despite the `publicKey()` example in its docs.
-    .then((token) => { state.key = token.publicKey.z32() })
+    .then(async (token) => {
+      const key = token.publicKey.z32()
+      if (ALLOWED_HOMESERVERS.length) {
+        // Where the user's own pkarr record says their homeserver is.
+        const home = await pubky.getHomeserverOf(PublicKey.from(key))
+        if (!home || !ALLOWED_HOMESERVERS.includes(home.z32())) {
+          state.error = 'this Pubky account is not a member of this homeserver'
+          return
+        }
+      }
+      state.key = key
+    })
     .catch((e) => { state.error = e?.message ?? String(e) })
   return state
 }

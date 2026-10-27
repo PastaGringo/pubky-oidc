@@ -43,6 +43,7 @@ Environment variables (see [`.env.example`](.env.example)):
 | `KEYS_FILE` | no | `./data/keys.json` | Signing keys, generated on first start. Keep this file: losing it invalidates every session |
 | `NEXUS_URL` | no | `https://nexus.pubky.app` | Where display names are read |
 | `PUBKY_RELAY` | no | the Pubky SDK default | HTTP relay used for the Pubky Ring handshake |
+| `ALLOWED_HOMESERVERS` | no | any | Comma-separated homeserver public keys: only users whose Pubky record points to one of them may sign in |
 
 The relying party authenticates with `client_secret_basic`, uses the authorization code flow, and asks for the `openid profile` scopes.
 
